@@ -1,26 +1,16 @@
--- [[ НАВИГАТОР — ПРОСТАЯ ВЕРСИЯ ]]
--- Вкладки: Добавить | Точки
--- Работает 100%
+-- [[ НАВИГАТОР — ТОЧКИ И КОПИРОВАНИЕ ]]
+-- Вкладка "ДОБАВИТЬ": кнопка добавить точку
+-- Вкладка "ТОЧКИ": список точек + кнопка "КОПИРОВАТЬ"
 
 local Player = game.Players.LocalPlayer
 local ClipboardService = game:GetService("ClipboardService")
 local UserInputService = game:GetService("UserInputService")
-local RunService = game:GetService("RunService")
 
--- ===== ДАННЫЕ =====
 local Points = {}
-local IsFlying = false
-local Speed = 50
-local IsLoop = false
-local LoopDelay = 1
-local CurrentIndex = 1
-local BodyVelocity = nil
-local BodyGyro = nil
-local FlyConnection = nil
 local Minimized = false
 local CurrentTab = "Add"
 
--- ===== СОЗДАЁМ GUI =====
+-- ===== GUI =====
 local ScreenGui = Instance.new("ScreenGui")
 ScreenGui.Name = "Navigator"
 ScreenGui.Parent = Player:WaitForChild("PlayerGui")
@@ -143,11 +133,11 @@ AddPanel.BackgroundTransparency = 1
 AddPanel.Parent = Content
 
 local AddBtn = Instance.new("TextButton")
-AddBtn.Size = UDim2.new(0.85, 0, 0, 48)
-AddBtn.Position = UDim2.new(0.075, 0, 0.05, 0)
+AddBtn.Size = UDim2.new(0.85, 0, 0, 60)
+AddBtn.Position = UDim2.new(0.075, 0, 0.1, 0)
 AddBtn.Text = "📌 ДОБАВИТЬ ТОЧКУ"
 AddBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
-AddBtn.TextSize = 17
+AddBtn.TextSize = 18
 AddBtn.BackgroundColor3 = Color3.fromRGB(123, 63, 252)
 AddBtn.BorderSizePixel = 0
 AddBtn.Font = Enum.Font.GothamSemibold
@@ -156,103 +146,34 @@ local AddCorner = Instance.new("UICorner")
 AddCorner.CornerRadius = UDim.new(0, 10)
 AddCorner.Parent = AddBtn
 
-local StartBtn = Instance.new("TextButton")
-StartBtn.Size = UDim2.new(0.42, 0, 0, 40)
-StartBtn.Position = UDim2.new(0.05, 0, 0.25, 0)
-StartBtn.Text = "🚀 СТАРТ"
-StartBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
-StartBtn.TextSize = 15
-StartBtn.BackgroundColor3 = Color3.fromRGB(50, 200, 120)
-StartBtn.BorderSizePixel = 0
-StartBtn.Font = Enum.Font.GothamSemibold
-StartBtn.Parent = AddPanel
-local StartCorner = Instance.new("UICorner")
-StartCorner.CornerRadius = UDim.new(0, 8)
-StartCorner.Parent = StartBtn
+local AddStatus = Instance.new("TextLabel")
+AddStatus.Size = UDim2.new(0.9, 0, 0, 30)
+AddStatus.Position = UDim2.new(0.05, 0, 0.35, 0)
+AddStatus.Text = "🟢 Подойди в нужное место и нажми кнопку"
+AddStatus.TextColor3 = Color3.fromRGB(180, 180, 210)
+AddStatus.TextSize = 13
+AddStatus.TextXAlignment = Enum.TextXAlignment.Center
+AddStatus.BackgroundTransparency = 1
+AddStatus.Font = Enum.Font.Gotham
+AddStatus.Parent = AddPanel
 
-local StopBtn = Instance.new("TextButton")
-StopBtn.Size = UDim2.new(0.42, 0, 0, 40)
-StopBtn.Position = UDim2.new(0.53, 0, 0.25, 0)
-StopBtn.Text = "⏹ СТОП"
-StopBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
-StopBtn.TextSize = 15
-StopBtn.BackgroundColor3 = Color3.fromRGB(200, 50, 80)
-StopBtn.BorderSizePixel = 0
-StopBtn.Font = Enum.Font.GothamSemibold
-StopBtn.Parent = AddPanel
-local StopCorner = Instance.new("UICorner")
-StopCorner.CornerRadius = UDim.new(0, 8)
-StopCorner.Parent = StopBtn
-
-local SpeedLabel = Instance.new("TextLabel")
-SpeedLabel.Size = UDim2.new(0.2, 0, 0, 18)
-SpeedLabel.Position = UDim2.new(0.05, 0, 0.4, 0)
-SpeedLabel.Text = "🚀 СКОРОСТЬ"
-SpeedLabel.TextColor3 = Color3.fromRGB(180, 180, 220)
-SpeedLabel.TextSize = 12
-SpeedLabel.TextXAlignment = Enum.TextXAlignment.Left
-SpeedLabel.BackgroundTransparency = 1
-SpeedLabel.Font = Enum.Font.Gotham
-SpeedLabel.Parent = AddPanel
-
-local SpeedInput = Instance.new("TextBox")
-SpeedInput.Size = UDim2.new(0.15, 0, 0, 28)
-SpeedInput.Position = UDim2.new(0.05, 0, 0.45, 0)
-SpeedInput.Text = "50"
-SpeedInput.TextColor3 = Color3.fromRGB(255, 255, 255)
-SpeedInput.TextSize = 14
-SpeedInput.BackgroundColor3 = Color3.fromRGB(18, 22, 40)
-SpeedInput.BorderSizePixel = 0
-SpeedInput.TextXAlignment = Enum.TextXAlignment.Center
-SpeedInput.Font = Enum.Font.Gotham
-SpeedInput.Parent = AddPanel
-local SpeedCorner = Instance.new("UICorner")
-SpeedCorner.CornerRadius = UDim.new(0, 6)
-SpeedCorner.Parent = SpeedInput
-
-local LoopBtn = Instance.new("TextButton")
-LoopBtn.Size = UDim2.new(0.15, 0, 0, 28)
-LoopBtn.Position = UDim2.new(0.25, 0, 0.45, 0)
-LoopBtn.Text = "🔁 ВЫКЛ"
-LoopBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
-LoopBtn.TextSize = 12
-LoopBtn.BackgroundColor3 = Color3.fromRGB(60, 60, 100)
-LoopBtn.BorderSizePixel = 0
-LoopBtn.Font = Enum.Font.GothamSemibold
-LoopBtn.Parent = AddPanel
-local LoopCorner = Instance.new("UICorner")
-LoopCorner.CornerRadius = UDim.new(0, 6)
-LoopCorner.Parent = LoopBtn
-
-local DelayLabel = Instance.new("TextLabel")
-DelayLabel.Size = UDim2.new(0.15, 0, 0, 18)
-DelayLabel.Position = UDim2.new(0.5, 0, 0.4, 0)
-DelayLabel.Text = "⏱ ЗАДЕРЖКА"
-DelayLabel.TextColor3 = Color3.fromRGB(180, 180, 220)
-DelayLabel.TextSize = 12
-DelayLabel.TextXAlignment = Enum.TextXAlignment.Left
-DelayLabel.BackgroundTransparency = 1
-DelayLabel.Font = Enum.Font.Gotham
-DelayLabel.Parent = AddPanel
-
-local DelayInput = Instance.new("TextBox")
-DelayInput.Size = UDim2.new(0.12, 0, 0, 28)
-DelayInput.Position = UDim2.new(0.5, 0, 0.45, 0)
-DelayInput.Text = "1"
-DelayInput.TextColor3 = Color3.fromRGB(255, 255, 255)
-DelayInput.TextSize = 14
-DelayInput.BackgroundColor3 = Color3.fromRGB(18, 22, 40)
-DelayInput.BorderSizePixel = 0
-DelayInput.TextXAlignment = Enum.TextXAlignment.Center
-DelayInput.Font = Enum.Font.Gotham
-DelayInput.Parent = AddPanel
-local DelayCorner = Instance.new("UICorner")
-DelayCorner.CornerRadius = UDim.new(0, 6)
-DelayCorner.Parent = DelayInput
+local ClearBtn = Instance.new("TextButton")
+ClearBtn.Size = UDim2.new(0.85, 0, 0, 40)
+ClearBtn.Position = UDim2.new(0.075, 0, 0.55, 0)
+ClearBtn.Text = "🗑 ОЧИСТИТЬ ВСЕ ТОЧКИ"
+ClearBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+ClearBtn.TextSize = 14
+ClearBtn.BackgroundColor3 = Color3.fromRGB(200, 50, 80)
+ClearBtn.BorderSizePixel = 0
+ClearBtn.Font = Enum.Font.GothamSemibold
+ClearBtn.Parent = AddPanel
+local ClearCorner = Instance.new("UICorner")
+ClearCorner.CornerRadius = UDim.new(0, 8)
+ClearCorner.Parent = ClearBtn
 
 local StatusText = Instance.new("TextLabel")
 StatusText.Size = UDim2.new(0.9, 0, 0, 22)
-StatusText.Position = UDim2.new(0.05, 0, 0.6, 0)
+StatusText.Position = UDim2.new(0.05, 0, 0.8, 0)
 StatusText.Text = "🟢 Готов"
 StatusText.TextColor3 = Color3.fromRGB(100, 200, 100)
 StatusText.TextSize = 13
@@ -300,7 +221,7 @@ end
 local CopyBtn = Instance.new("TextButton")
 CopyBtn.Size = UDim2.new(0.85, 0, 0, 40)
 CopyBtn.Position = UDim2.new(0.075, 0, 0.82, 0)
-CopyBtn.Text = "📋 КОПИРОВАТЬ ВСЕ"
+CopyBtn.Text = "📋 КОПИРОВАТЬ ВСЕ КООРДИНАТЫ"
 CopyBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
 CopyBtn.TextSize = 14
 CopyBtn.BackgroundColor3 = Color3.fromRGB(50, 180, 120)
@@ -314,7 +235,7 @@ CopyCorner.Parent = CopyBtn
 local CopyStatus = Instance.new("TextLabel")
 CopyStatus.Size = UDim2.new(0.9, 0, 0, 20)
 CopyStatus.Position = UDim2.new(0.05, 0, 0.91, 0)
-CopyStatus.Text = "📋 Нажми кнопку, чтобы скопировать"
+CopyStatus.Text = "📋 Нажми кнопку, чтобы скопировать координаты"
 CopyStatus.TextColor3 = Color3.fromRGB(150, 150, 180)
 CopyStatus.TextSize = 11
 CopyStatus.TextXAlignment = Enum.TextXAlignment.Center
@@ -342,11 +263,26 @@ local function AddPoint()
     UpdateList()
     StatusText.Text = "✅ Точка " .. #Points .. " добавлена"
     StatusText.TextColor3 = Color3.fromRGB(100, 200, 100)
+    AddStatus.Text = "✅ Точка " .. #Points .. " сохранена!"
+    AddStatus.TextColor3 = Color3.fromRGB(100, 200, 100)
+    task.wait(0.8)
+    AddStatus.Text = "🟢 Подойди в нужное место и нажми кнопку"
+    AddStatus.TextColor3 = Color3.fromRGB(180, 180, 210)
+end
+
+local function ClearPoints()
+    Points = {}
+    PointsCount.Text = "0"
+    UpdateList()
+    StatusText.Text = "🗑 Точки очищены"
+    StatusText.TextColor3 = Color3.fromRGB(200, 200, 100)
+    AddStatus.Text = "🟢 Подойди в нужное место и нажми кнопку"
+    AddStatus.TextColor3 = Color3.fromRGB(180, 180, 210)
 end
 
 local function CopyPoints()
     if #Points == 0 then
-        CopyStatus.Text = "❌ Нет точек"
+        CopyStatus.Text = "❌ Нет точек для копирования"
         CopyStatus.TextColor3 = Color3.fromRGB(200, 80, 80)
         return
     end
@@ -357,133 +293,6 @@ local function CopyPoints()
     ClipboardService:SetText(text)
     CopyStatus.Text = "✅ " .. #Points .. " точек скопировано!"
     CopyStatus.TextColor3 = Color3.fromRGB(100, 200, 100)
-end
-
--- ===== ПОЛЁТ =====
-local function StopFlight()
-    IsFlying = false
-    if FlyConnection then
-        FlyConnection:Disconnect()
-        FlyConnection = nil
-    end
-    if BodyVelocity then
-        BodyVelocity:Destroy()
-        BodyVelocity = nil
-    end
-    if BodyGyro then
-        BodyGyro:Destroy()
-        BodyGyro = nil
-    end
-    local char = Player.Character
-    if char then
-        local hum = char:FindFirstChild("Humanoid")
-        if hum then
-            hum.PlatformStand = false
-            hum:SetStateEnabled(Enum.HumanoidStateType.FallingDown, true)
-            hum:SetStateEnabled(Enum.HumanoidStateType.GettingUp, true)
-            hum:SetStateEnabled(Enum.HumanoidStateType.Jumping, true)
-            hum:SetStateEnabled(Enum.HumanoidStateType.Climbing, true)
-        end
-    end
-    StartBtn.Text = "🚀 СТАРТ"
-    StartBtn.BackgroundColor3 = Color3.fromRGB(50, 200, 120)
-    if StatusText.Text ~= "✅ Маршрут пройден!" then
-        StatusText.Text = "⏹ Остановлен"
-        StatusText.TextColor3 = Color3.fromRGB(200, 200, 100)
-    end
-end
-
-local function StartFlight()
-    if #Points == 0 then
-        StatusText.Text = "❌ Нет точек!"
-        StatusText.TextColor3 = Color3.fromRGB(200, 80, 80)
-        return
-    end
-    if IsFlying then return end
-    IsFlying = true
-    CurrentIndex = 1
-
-    local char = Player.Character
-    if not char then
-        IsFlying = false
-        StatusText.Text = "❌ Персонаж не найден"
-        StatusText.TextColor3 = Color3.fromRGB(200, 80, 80)
-        return
-    end
-    local root = char:FindFirstChild("HumanoidRootPart")
-    local hum = char:FindFirstChild("Humanoid")
-    if not root or not hum then
-        IsFlying = false
-        StatusText.Text = "❌ Ошибка персонажа"
-        StatusText.TextColor3 = Color3.fromRGB(200, 80, 80)
-        return
-    end
-
-    StatusText.Text = "✈️ Летим к точке 1/" .. #Points
-    StatusText.TextColor3 = Color3.fromRGB(100, 200, 255)
-    StartBtn.Text = "ЛЕТИТ..."
-    StartBtn.BackgroundColor3 = Color3.fromRGB(200, 200, 100)
-
-    hum.PlatformStand = true
-    hum:SetStateEnabled(Enum.HumanoidStateType.FallingDown, false)
-    hum:SetStateEnabled(Enum.HumanoidStateType.GettingUp, false)
-    hum:SetStateEnabled(Enum.HumanoidStateType.Jumping, false)
-    hum:SetStateEnabled(Enum.HumanoidStateType.Climbing, false)
-
-    BodyVelocity = Instance.new("BodyVelocity")
-    BodyVelocity.Velocity = Vector3.new(0, 0, 0)
-    BodyVelocity.MaxForce = Vector3.new(400000, 400000, 400000)
-    BodyVelocity.Parent = root
-
-    BodyGyro = Instance.new("BodyGyro")
-    BodyGyro.CFrame = root.CFrame
-    BodyGyro.MaxTorque = Vector3.new(400000, 400000, 400000)
-    BodyGyro.Parent = root
-
-    if FlyConnection then FlyConnection:Disconnect() end
-
-    FlyConnection = RunService.Heartbeat:Connect(function()
-        if not IsFlying then
-            StopFlight()
-            return
-        end
-        if not char or not root then
-            StopFlight()
-            return
-        end
-
-        local currentPos = root.Position
-        local target = Points[CurrentIndex]
-        local dist = (target - currentPos).Magnitude
-
-        if dist < 3 then
-            CurrentIndex = CurrentIndex + 1
-            if CurrentIndex > #Points then
-                if IsLoop then
-                    StopFlight()
-                    StatusText.Text = "🔄 Зацикливание... " .. LoopDelay .. "с"
-                    StatusText.TextColor3 = Color3.fromRGB(100, 200, 255)
-                    task.wait(LoopDelay)
-                    StartFlight()
-                else
-                    StatusText.Text = "✅ Маршрут пройден!"
-                    StatusText.TextColor3 = Color3.fromRGB(100, 200, 100)
-                    StopFlight()
-                end
-                return
-            end
-            StatusText.Text = "✈️ Точка " .. CurrentIndex .. "/" .. #Points
-            return
-        end
-
-        local dir = (target - currentPos).Unit
-        if BodyVelocity then
-            BodyVelocity.Velocity = dir * Speed
-        end
-        if BodyGyro then
-            BodyGyro.CFrame = CFrame.lookAt(root.Position, root.Position + dir)
-        end
-    end)
 end
 
 -- ===== ПЕРЕКЛЮЧЕНИЕ ВКЛАДОК =====
@@ -512,19 +321,8 @@ end)
 -- ===== КНОПКИ =====
 
 AddBtn.MouseButton1Click:Connect(AddPoint)
+ClearBtn.MouseButton1Click:Connect(ClearPoints)
 CopyBtn.MouseButton1Click:Connect(CopyPoints)
-
-StartBtn.MouseButton1Click:Connect(function()
-    if IsFlying then StopFlight() else StartFlight() end
-end)
-
-StopBtn.MouseButton1Click:Connect(StopFlight)
-
-LoopBtn.MouseButton1Click:Connect(function()
-    IsLoop = not IsLoop
-    LoopBtn.Text = IsLoop and "🔁 ВКЛ" or "🔁 ВЫКЛ"
-    LoopBtn.BackgroundColor3 = IsLoop and Color3.fromRGB(123, 63, 252) or Color3.fromRGB(60, 60, 100)
-end)
 
 MinBtn.MouseButton1Click:Connect(function()
     Minimized = not Minimized
@@ -535,23 +333,14 @@ MinBtn.MouseButton1Click:Connect(function()
 end)
 
 CloseBtn.MouseButton1Click:Connect(function()
-    StopFlight()
     ScreenGui:Destroy()
 end)
 
--- ===== ГОРЯЧИЕ КЛАВИШИ =====
+-- ===== ГОРЯЧАЯ КЛАВИША =====
 UserInputService.InputBegan:Connect(function(input, processed)
     if processed then return end
     if input.KeyCode == Enum.KeyCode.P then AddBtn.MouseButton1Click:Connect() end
-    if input.KeyCode == Enum.KeyCode.F then StartBtn.MouseButton1Click:Connect() end
-    if input.KeyCode == Enum.KeyCode.G then StopBtn.MouseButton1Click:Connect() end
-end)
-
--- ===== ОБНОВЛЕНИЕ ПРИ РЕСПАВНЕ =====
-Player.CharacterAdded:Connect(function()
-    task.wait(0.5)
-    if IsFlying then StopFlight() end
 end)
 
 print("✅ НАВИГАТОР загружен!")
-print("📌 P — добавить точку | F — Старт | G — Стоп")
+print("📌 P — добавить точку | Вкладка ТОЧКИ — скопировать координаты")
