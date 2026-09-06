@@ -1,6 +1,6 @@
--- [[ НАВИГАТОР — СОХРАНЕНИЕ ТОЧЕК С КОПИРОВАНИЕМ ]]
--- Подошёл → нажал "ДОБАВИТЬ" → точка сохранилась
--- Нажал "КОПИРОВАТЬ" → все координаты в буфер обмена
+-- [[ НАВИГАТОР LITE — ТОЧКИ С КОПИРОВАНИЕМ ]]
+-- Подошёл → нажал "+" → точка сохранена
+-- Нажал "📋 КОПИРОВАТЬ" → координаты в буфер
 
 local Player = game.Players.LocalPlayer
 local RunService = game:GetService("RunService")
@@ -14,20 +14,20 @@ local IsLoop = false
 local LoopDelay = 1
 local IsFlying = false
 local CurrentIndex = 1
-local Minimized = false
 local BodyVelocity = nil
 local BodyGyro = nil
 local FlyConnection = nil
+local Minimized = false
 
 -- ===== GUI =====
 local ScreenGui = Instance.new("ScreenGui")
-ScreenGui.Name = "Navigator"
+ScreenGui.Name = "NavigatorLite"
 ScreenGui.Parent = Player:WaitForChild("PlayerGui")
 ScreenGui.ResetOnSpawn = false
 
 local MainFrame = Instance.new("Frame")
-MainFrame.Size = UDim2.new(0, 380, 0, 480)
-MainFrame.Position = UDim2.new(0.5, -190, 0.5, -240)
+MainFrame.Size = UDim2.new(0, 360, 0, 460)
+MainFrame.Position = UDim2.new(0.5, -180, 0.5, -230)
 MainFrame.BackgroundColor3 = Color3.fromRGB(8, 10, 20)
 MainFrame.BorderSizePixel = 0
 MainFrame.ClipsDescendants = true
@@ -118,7 +118,7 @@ local ListCorner = Instance.new("UICorner")
 ListCorner.CornerRadius = UDim.new(0, 6)
 ListCorner.Parent = PointsList
 
-local function UpdatePointsList()
+local function UpdateList()
     for _, child in pairs(PointsList:GetChildren()) do child:Destroy() end
     PointsList.CanvasSize = UDim2.new(0, 0, 0, #Points * 22)
     for i, pos in ipairs(Points) do
@@ -135,13 +135,13 @@ local function UpdatePointsList()
     end
 end
 
--- ===== КНОПКИ =====
+-- ===== ВЕРХНИЙ РЯД КНОПОК =====
 local AddBtn = Instance.new("TextButton")
-AddBtn.Size = UDim2.new(0.4, 0, 0, 36)
+AddBtn.Size = UDim2.new(0.3, 0, 0, 36)
 AddBtn.Position = UDim2.new(0.075, 0, 0.32, 0)
-AddBtn.Text = "📌 ДОБАВИТЬ"
+AddBtn.Text = "➕ ДОБАВИТЬ"
 AddBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
-AddBtn.TextSize = 14
+AddBtn.TextSize = 13
 AddBtn.BackgroundColor3 = Color3.fromRGB(123, 63, 252)
 AddBtn.BorderSizePixel = 0
 AddBtn.Font = Enum.Font.GothamSemibold
@@ -152,7 +152,7 @@ AddCorner.Parent = AddBtn
 
 local ClearBtn = Instance.new("TextButton")
 ClearBtn.Size = UDim2.new(0.2, 0, 0, 36)
-ClearBtn.Position = UDim2.new(0.5, 0, 0.32, 0)
+ClearBtn.Position = UDim2.new(0.4, 0, 0.32, 0)
 ClearBtn.Text = "🗑 ОЧИСТИТЬ"
 ClearBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
 ClearBtn.TextSize = 12
@@ -165,8 +165,8 @@ ClearCorner.CornerRadius = UDim.new(0, 8)
 ClearCorner.Parent = ClearBtn
 
 local CopyBtn = Instance.new("TextButton")
-CopyBtn.Size = UDim2.new(0.2, 0, 0, 36)
-CopyBtn.Position = UDim2.new(0.725, 0, 0.32, 0)
+CopyBtn.Size = UDim2.new(0.25, 0, 0, 36)
+CopyBtn.Position = UDim2.new(0.65, 0, 0.32, 0)
 CopyBtn.Text = "📋 КОПИРОВАТЬ"
 CopyBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
 CopyBtn.TextSize = 11
@@ -180,8 +180,8 @@ CopyCorner.Parent = CopyBtn
 
 -- ===== СТАРТ/СТОП =====
 local StartBtn = Instance.new("TextButton")
-StartBtn.Size = UDim2.new(0.4, 0, 0, 40)
-StartBtn.Position = UDim2.new(0.075, 0, 0.44, 0)
+StartBtn.Size = UDim2.new(0.42, 0, 0, 40)
+StartBtn.Position = UDim2.new(0.05, 0, 0.44, 0)
 StartBtn.Text = "🚀 СТАРТ"
 StartBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
 StartBtn.TextSize = 15
@@ -194,8 +194,8 @@ StartCorner.CornerRadius = UDim.new(0, 8)
 StartCorner.Parent = StartBtn
 
 local StopBtn = Instance.new("TextButton")
-StopBtn.Size = UDim2.new(0.4, 0, 0, 40)
-StopBtn.Position = UDim2.new(0.525, 0, 0.44, 0)
+StopBtn.Size = UDim2.new(0.42, 0, 0, 40)
+StopBtn.Position = UDim2.new(0.53, 0, 0.44, 0)
 StopBtn.Text = "⏹ СТОП"
 StopBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
 StopBtn.TextSize = 15
@@ -210,7 +210,7 @@ StopCorner.Parent = StopBtn
 -- ===== НАСТРОЙКИ =====
 local SpeedLabel = Instance.new("TextLabel")
 SpeedLabel.Size = UDim2.new(0.2, 0, 0, 18)
-SpeedLabel.Position = UDim2.new(0.075, 0, 0.57, 0)
+SpeedLabel.Position = UDim2.new(0.05, 0, 0.57, 0)
 SpeedLabel.Text = "🚀 СКОРОСТЬ"
 SpeedLabel.TextColor3 = Color3.fromRGB(180, 180, 220)
 SpeedLabel.TextSize = 11
@@ -221,7 +221,7 @@ SpeedLabel.Parent = Content
 
 local SpeedInput = Instance.new("TextBox")
 SpeedInput.Size = UDim2.new(0.15, 0, 0, 28)
-SpeedInput.Position = UDim2.new(0.075, 0, 0.62, 0)
+SpeedInput.Position = UDim2.new(0.05, 0, 0.62, 0)
 SpeedInput.Text = "50"
 SpeedInput.TextColor3 = Color3.fromRGB(255, 255, 255)
 SpeedInput.TextSize = 14
@@ -241,7 +241,7 @@ end)
 
 local LoopBtn = Instance.new("TextButton")
 LoopBtn.Size = UDim2.new(0.15, 0, 0, 28)
-LoopBtn.Position = UDim2.new(0.28, 0, 0.62, 0)
+LoopBtn.Position = UDim2.new(0.25, 0, 0.62, 0)
 LoopBtn.Text = "🔁 ВЫКЛ"
 LoopBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
 LoopBtn.TextSize = 11
@@ -284,6 +284,7 @@ DelayInput.FocusLost:Connect(function()
     if val and val > 0 then LoopDelay = val end
 end)
 
+-- ===== СТАТУС =====
 local StatusText = Instance.new("TextLabel")
 StatusText.Size = UDim2.new(0.9, 0, 0, 22)
 StatusText.Position = UDim2.new(0.05, 0, 0.78, 0)
@@ -312,7 +313,7 @@ local function AddPoint()
     end
     table.insert(Points, root.Position)
     PointsCount.Text = #Points
-    UpdatePointsList()
+    UpdateList()
     StatusText.Text = "✅ Точка " .. #Points .. " добавлена"
     StatusText.TextColor3 = Color3.fromRGB(100, 200, 100)
 end
@@ -321,7 +322,7 @@ local function ClearPoints()
     if IsFlying then StopFlight() end
     Points = {}
     PointsCount.Text = "0"
-    UpdatePointsList()
+    UpdateList()
     StatusText.Text = "🗑 Точки очищены"
     StatusText.TextColor3 = Color3.fromRGB(200, 200, 100)
 end
@@ -489,7 +490,7 @@ MinBtn.MouseButton1Click:Connect(function()
     Minimized = not Minimized
     Content.Visible = not Minimized
     MinBtn.Text = Minimized and "+" or "─"
-    MainFrame.Size = Minimized and UDim2.new(0, 380, 0, 46) or UDim2.new(0, 380, 0, 480)
+    MainFrame.Size = Minimized and UDim2.new(0, 360, 0, 46) or UDim2.new(0, 360, 0, 460)
 end)
 
 CloseBtn.MouseButton1Click:Connect(function()
@@ -497,11 +498,12 @@ CloseBtn.MouseButton1Click:Connect(function()
     ScreenGui:Destroy()
 end)
 
+-- ===== ГОРЯЧИЕ КЛАВИШИ =====
 UserInputService.InputBegan:Connect(function(input, processed)
     if processed then return end
+    if input.KeyCode == Enum.KeyCode.P then AddBtn.MouseButton1Click:Connect() end
     if input.KeyCode == Enum.KeyCode.F then StartBtn.MouseButton1Click:Connect() end
     if input.KeyCode == Enum.KeyCode.G then StopBtn.MouseButton1Click:Connect() end
-    if input.KeyCode == Enum.KeyCode.P then AddBtn.MouseButton1Click:Connect() end
 end)
 
 Player.CharacterAdded:Connect(function()
@@ -509,5 +511,5 @@ Player.CharacterAdded:Connect(function()
     if IsFlying then StopFlight() end
 end)
 
-print("✅ НАВИГАТОР загружен!")
-print("📌 P — добавить точку | 📋 КОПИРОВАТЬ — скопировать все координаты")
+print("✅ НАВИГАТОР LITE загружен!")
+print("📌 P — добавить | 📋 КОПИРОВАТЬ — скопировать координаты")
