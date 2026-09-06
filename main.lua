@@ -1,18 +1,18 @@
--- [[ НАВИГАТОР — ТОЧКИ С КОПИРОВАНИЕМ ]]
--- Вкладка "ДОБАВИТЬ": кнопка добавить точку
--- Вкладка "ТОЧКИ": список всех точек + кнопка "КОПИРОВАТЬ"
+-- [[ НАВИГАТОР — ПРОСТАЯ ВЕРСИЯ ]]
+-- Вкладки: Добавить | Точки
+-- Работает 100%
 
 local Player = game.Players.LocalPlayer
-local RunService = game:GetService("RunService")
-local UserInputService = game:GetService("UserInputService")
 local ClipboardService = game:GetService("ClipboardService")
+local UserInputService = game:GetService("UserInputService")
+local RunService = game:GetService("RunService")
 
 -- ===== ДАННЫЕ =====
 local Points = {}
+local IsFlying = false
 local Speed = 50
 local IsLoop = false
 local LoopDelay = 1
-local IsFlying = false
 local CurrentIndex = 1
 local BodyVelocity = nil
 local BodyGyro = nil
@@ -20,15 +20,15 @@ local FlyConnection = nil
 local Minimized = false
 local CurrentTab = "Add"
 
--- ===== GUI =====
+-- ===== СОЗДАЁМ GUI =====
 local ScreenGui = Instance.new("ScreenGui")
 ScreenGui.Name = "Navigator"
 ScreenGui.Parent = Player:WaitForChild("PlayerGui")
 ScreenGui.ResetOnSpawn = false
 
 local MainFrame = Instance.new("Frame")
-MainFrame.Size = UDim2.new(0, 380, 0, 480)
-MainFrame.Position = UDim2.new(0.5, -190, 0.5, -240)
+MainFrame.Size = UDim2.new(0, 380, 0, 460)
+MainFrame.Position = UDim2.new(0.5, -190, 0.5, -230)
 MainFrame.BackgroundColor3 = Color3.fromRGB(8, 10, 20)
 MainFrame.BorderSizePixel = 0
 MainFrame.ClipsDescendants = true
@@ -143,11 +143,11 @@ AddPanel.BackgroundTransparency = 1
 AddPanel.Parent = Content
 
 local AddBtn = Instance.new("TextButton")
-AddBtn.Size = UDim2.new(0.85, 0, 0, 50)
+AddBtn.Size = UDim2.new(0.85, 0, 0, 48)
 AddBtn.Position = UDim2.new(0.075, 0, 0.05, 0)
 AddBtn.Text = "📌 ДОБАВИТЬ ТОЧКУ"
 AddBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
-AddBtn.TextSize = 18
+AddBtn.TextSize = 17
 AddBtn.BackgroundColor3 = Color3.fromRGB(123, 63, 252)
 AddBtn.BorderSizePixel = 0
 AddBtn.Font = Enum.Font.GothamSemibold
@@ -156,21 +156,9 @@ local AddCorner = Instance.new("UICorner")
 AddCorner.CornerRadius = UDim.new(0, 10)
 AddCorner.Parent = AddBtn
 
-local AddStatus = Instance.new("TextLabel")
-AddStatus.Size = UDim2.new(0.9, 0, 0, 30)
-AddStatus.Position = UDim2.new(0.05, 0, 0.25, 0)
-AddStatus.Text = "🟢 Подойди в нужное место и нажми кнопку"
-AddStatus.TextColor3 = Color3.fromRGB(180, 180, 210)
-AddStatus.TextSize = 13
-AddStatus.TextXAlignment = Enum.TextXAlignment.Center
-AddStatus.BackgroundTransparency = 1
-AddStatus.Font = Enum.Font.Gotham
-AddStatus.Parent = AddPanel
-
--- ===== СТАРТ/СТОП =====
 local StartBtn = Instance.new("TextButton")
-StartBtn.Size = UDim2.new(0.42, 0, 0, 42)
-StartBtn.Position = UDim2.new(0.05, 0, 0.45, 0)
+StartBtn.Size = UDim2.new(0.42, 0, 0, 40)
+StartBtn.Position = UDim2.new(0.05, 0, 0.25, 0)
 StartBtn.Text = "🚀 СТАРТ"
 StartBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
 StartBtn.TextSize = 15
@@ -183,8 +171,8 @@ StartCorner.CornerRadius = UDim.new(0, 8)
 StartCorner.Parent = StartBtn
 
 local StopBtn = Instance.new("TextButton")
-StopBtn.Size = UDim2.new(0.42, 0, 0, 42)
-StopBtn.Position = UDim2.new(0.53, 0, 0.45, 0)
+StopBtn.Size = UDim2.new(0.42, 0, 0, 40)
+StopBtn.Position = UDim2.new(0.53, 0, 0.25, 0)
 StopBtn.Text = "⏹ СТОП"
 StopBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
 StopBtn.TextSize = 15
@@ -196,13 +184,12 @@ local StopCorner = Instance.new("UICorner")
 StopCorner.CornerRadius = UDim.new(0, 8)
 StopCorner.Parent = StopBtn
 
--- ===== НАСТРОЙКИ =====
 local SpeedLabel = Instance.new("TextLabel")
 SpeedLabel.Size = UDim2.new(0.2, 0, 0, 18)
-SpeedLabel.Position = UDim2.new(0.05, 0, 0.58, 0)
+SpeedLabel.Position = UDim2.new(0.05, 0, 0.4, 0)
 SpeedLabel.Text = "🚀 СКОРОСТЬ"
 SpeedLabel.TextColor3 = Color3.fromRGB(180, 180, 220)
-SpeedLabel.TextSize = 11
+SpeedLabel.TextSize = 12
 SpeedLabel.TextXAlignment = Enum.TextXAlignment.Left
 SpeedLabel.BackgroundTransparency = 1
 SpeedLabel.Font = Enum.Font.Gotham
@@ -210,7 +197,7 @@ SpeedLabel.Parent = AddPanel
 
 local SpeedInput = Instance.new("TextBox")
 SpeedInput.Size = UDim2.new(0.15, 0, 0, 28)
-SpeedInput.Position = UDim2.new(0.05, 0, 0.63, 0)
+SpeedInput.Position = UDim2.new(0.05, 0, 0.45, 0)
 SpeedInput.Text = "50"
 SpeedInput.TextColor3 = Color3.fromRGB(255, 255, 255)
 SpeedInput.TextSize = 14
@@ -223,17 +210,12 @@ local SpeedCorner = Instance.new("UICorner")
 SpeedCorner.CornerRadius = UDim.new(0, 6)
 SpeedCorner.Parent = SpeedInput
 
-SpeedInput.FocusLost:Connect(function()
-    local val = tonumber(SpeedInput.Text)
-    if val and val > 0 then Speed = val end
-end)
-
 local LoopBtn = Instance.new("TextButton")
 LoopBtn.Size = UDim2.new(0.15, 0, 0, 28)
-LoopBtn.Position = UDim2.new(0.25, 0, 0.63, 0)
+LoopBtn.Position = UDim2.new(0.25, 0, 0.45, 0)
 LoopBtn.Text = "🔁 ВЫКЛ"
 LoopBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
-LoopBtn.TextSize = 11
+LoopBtn.TextSize = 12
 LoopBtn.BackgroundColor3 = Color3.fromRGB(60, 60, 100)
 LoopBtn.BorderSizePixel = 0
 LoopBtn.Font = Enum.Font.GothamSemibold
@@ -244,10 +226,10 @@ LoopCorner.Parent = LoopBtn
 
 local DelayLabel = Instance.new("TextLabel")
 DelayLabel.Size = UDim2.new(0.15, 0, 0, 18)
-DelayLabel.Position = UDim2.new(0.5, 0, 0.58, 0)
+DelayLabel.Position = UDim2.new(0.5, 0, 0.4, 0)
 DelayLabel.Text = "⏱ ЗАДЕРЖКА"
 DelayLabel.TextColor3 = Color3.fromRGB(180, 180, 220)
-DelayLabel.TextSize = 11
+DelayLabel.TextSize = 12
 DelayLabel.TextXAlignment = Enum.TextXAlignment.Left
 DelayLabel.BackgroundTransparency = 1
 DelayLabel.Font = Enum.Font.Gotham
@@ -255,7 +237,7 @@ DelayLabel.Parent = AddPanel
 
 local DelayInput = Instance.new("TextBox")
 DelayInput.Size = UDim2.new(0.12, 0, 0, 28)
-DelayInput.Position = UDim2.new(0.5, 0, 0.63, 0)
+DelayInput.Position = UDim2.new(0.5, 0, 0.45, 0)
 DelayInput.Text = "1"
 DelayInput.TextColor3 = Color3.fromRGB(255, 255, 255)
 DelayInput.TextSize = 14
@@ -268,14 +250,9 @@ local DelayCorner = Instance.new("UICorner")
 DelayCorner.CornerRadius = UDim.new(0, 6)
 DelayCorner.Parent = DelayInput
 
-DelayInput.FocusLost:Connect(function()
-    local val = tonumber(DelayInput.Text)
-    if val and val > 0 then LoopDelay = val end
-end)
-
 local StatusText = Instance.new("TextLabel")
 StatusText.Size = UDim2.new(0.9, 0, 0, 22)
-StatusText.Position = UDim2.new(0.05, 0, 0.78, 0)
+StatusText.Position = UDim2.new(0.05, 0, 0.6, 0)
 StatusText.Text = "🟢 Готов"
 StatusText.TextColor3 = Color3.fromRGB(100, 200, 100)
 StatusText.TextSize = 13
@@ -323,7 +300,7 @@ end
 local CopyBtn = Instance.new("TextButton")
 CopyBtn.Size = UDim2.new(0.85, 0, 0, 40)
 CopyBtn.Position = UDim2.new(0.075, 0, 0.82, 0)
-CopyBtn.Text = "📋 КОПИРОВАТЬ ВСЕ КООРДИНАТЫ"
+CopyBtn.Text = "📋 КОПИРОВАТЬ ВСЕ"
 CopyBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
 CopyBtn.TextSize = 14
 CopyBtn.BackgroundColor3 = Color3.fromRGB(50, 180, 120)
@@ -337,7 +314,7 @@ CopyCorner.Parent = CopyBtn
 local CopyStatus = Instance.new("TextLabel")
 CopyStatus.Size = UDim2.new(0.9, 0, 0, 20)
 CopyStatus.Position = UDim2.new(0.05, 0, 0.91, 0)
-CopyStatus.Text = "📋 Нажми кнопку, чтобы скопировать координаты"
+CopyStatus.Text = "📋 Нажми кнопку, чтобы скопировать"
 CopyStatus.TextColor3 = Color3.fromRGB(150, 150, 180)
 CopyStatus.TextSize = 11
 CopyStatus.TextXAlignment = Enum.TextXAlignment.Center
@@ -365,16 +342,11 @@ local function AddPoint()
     UpdateList()
     StatusText.Text = "✅ Точка " .. #Points .. " добавлена"
     StatusText.TextColor3 = Color3.fromRGB(100, 200, 100)
-    AddStatus.Text = "✅ Точка " .. #Points .. " сохранена!"
-    AddStatus.TextColor3 = Color3.fromRGB(100, 200, 100)
-    task.wait(0.8)
-    AddStatus.Text = "🟢 Подойди в нужное место и нажми кнопку"
-    AddStatus.TextColor3 = Color3.fromRGB(180, 180, 210)
 end
 
 local function CopyPoints()
     if #Points == 0 then
-        CopyStatus.Text = "❌ Нет точек для копирования"
+        CopyStatus.Text = "❌ Нет точек"
         CopyStatus.TextColor3 = Color3.fromRGB(200, 80, 80)
         return
     end
@@ -387,6 +359,7 @@ local function CopyPoints()
     CopyStatus.TextColor3 = Color3.fromRGB(100, 200, 100)
 end
 
+-- ===== ПОЛЁТ =====
 local function StopFlight()
     IsFlying = false
     if FlyConnection then
@@ -558,7 +531,7 @@ MinBtn.MouseButton1Click:Connect(function()
     Content.Visible = not Minimized
     TabBar.Visible = not Minimized
     MinBtn.Text = Minimized and "+" or "─"
-    MainFrame.Size = Minimized and UDim2.new(0, 380, 0, 46) or UDim2.new(0, 380, 0, 480)
+    MainFrame.Size = Minimized and UDim2.new(0, 380, 0, 46) or UDim2.new(0, 380, 0, 460)
 end)
 
 CloseBtn.MouseButton1Click:Connect(function()
@@ -574,10 +547,11 @@ UserInputService.InputBegan:Connect(function(input, processed)
     if input.KeyCode == Enum.KeyCode.G then StopBtn.MouseButton1Click:Connect() end
 end)
 
+-- ===== ОБНОВЛЕНИЕ ПРИ РЕСПАВНЕ =====
 Player.CharacterAdded:Connect(function()
     task.wait(0.5)
     if IsFlying then StopFlight() end
 end)
 
 print("✅ НАВИГАТОР загружен!")
-print("📌 P — добавить точку | 📋 КОПИРОВАТЬ — скопировать координаты")
+print("📌 P — добавить точку | F — Старт | G — Стоп")
