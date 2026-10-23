@@ -1,545 +1,722 @@
--- [[ Murder Duels — ХИТБОКСЫ (до 100) + ESP (авто-обновление) + HOTKEY ]]
--- H — включить/выключить хитбоксы
+-- [[OPEN SOURCE]] --
+-- [[SCRIPT BY LINHMC_NEW]] --
+-- [[VERSION 1.4]] --
+------------------------------------------
+-- [[DEFAULT CONFIG]] --
+-- getgenv().rotationSpeed = 1
+-- getgenv().noclipfly = true
+-- getgenv().useV3Method = true
+------------------------------------------
+--- [[SCRIPT]]--
+local main = Instance.new("ScreenGui")
+local Frame = Instance.new("Frame")
+local up = Instance.new("TextButton")
+local down = Instance.new("TextButton")
+local onof = Instance.new("TextButton")
+local TextLabel = Instance.new("TextLabel")
+local plus = Instance.new("TextButton")
+local speed = Instance.new("TextLabel")
+local mine = Instance.new("TextButton")
+local closebutton = Instance.new("TextButton")
+local mini = Instance.new("TextButton")
+local mini2 = Instance.new("TextButton")
+local keybindButton = Instance.new("TextButton")
+local keybindLabel = Instance.new("TextLabel")
+local resetKeybindButton = Instance.new("TextButton")
 
-local Player = game.Players.LocalPlayer
+local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
 local UserInputService = game:GetService("UserInputService")
+local TweenService = game:GetService("TweenService")
+local player = Players.LocalPlayer
 
--- ===== НАСТРОЙКИ =====
-local CheckInterval = 0.5
-local HitboxHotkey = Enum.KeyCode.H -- 🔥 ГОРЯЧАЯ КЛАВИША
+local flySpeed = 50
+local flyEnabled = false
+local flying = false
+local bodyVelocity, bodyGyro, flyConnection, stateChangedConnection, animationConnection, noclipConnection
+local currentKeybind = Enum.KeyCode.F
+local settingKeybind = false
+local lastLookDirection = Vector3.new(0, 0, -1)
+local rotationSpeed = (getgenv and getgenv().rotationSpeed) or 0.03
 
--- ===== ХИТБОКСЫ =====
-local HitboxScale = 3
-local HitboxActive = false
-local OriginalSizes = {}
+local originalCollisionStates = {}
 
--- ===== ESP =====
-local EspActive = false
-local EspColor = Color3.fromRGB(255, 0, 0)
-local EspHighlights = {}
+local speeds = 1
+local speaker = game:GetService("Players").LocalPlayer
+local chr = game.Players.LocalPlayer.Character
+local hum = chr and chr:FindFirstChildWhichIsA("Humanoid")
+local nowe = false
+local tpwalking = false
 
--- ===== GUI =====
-local ScreenGui = Instance.new("ScreenGui")
-ScreenGui.Name = "MurderDuelsMenu"
-ScreenGui.Parent = Player:WaitForChild("PlayerGui")
-ScreenGui.ResetOnSpawn = false
+main.Name = "main"
+main.Parent = game.Players.LocalPlayer:WaitForChild("PlayerGui")
+main.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+main.ResetOnSpawn = false
 
-local MainFrame = Instance.new("Frame")
-MainFrame.Size = UDim2.new(0, 320, 0, 400)
-MainFrame.Position = UDim2.new(0.5, -160, 0.5, -200)
-MainFrame.BackgroundColor3 = Color3.fromRGB(15, 15, 20)
-MainFrame.BorderSizePixel = 0
-MainFrame.ClipsDescendants = true
-MainFrame.Active = true
-MainFrame.Draggable = true
-MainFrame.Parent = ScreenGui
+Frame.Parent = main
+Frame.BackgroundColor3 = Color3.fromRGB(163, 255, 137)
+Frame.BorderColor3 = Color3.fromRGB(103, 221, 213)
+Frame.Position = UDim2.new(0.100320168, 0, 0.379746825, 0)
+Frame.Size = UDim2.new(0, 190, 0, 85)
 
-local Corner = Instance.new("UICorner")
-Corner.CornerRadius = UDim.new(0, 10)
-Corner.Parent = MainFrame
+up.Name = "up"
+up.Parent = Frame
+up.BackgroundColor3 = Color3.fromRGB(79, 255, 152)
+up.Size = UDim2.new(0, 44, 0, 28)
+up.Font = Enum.Font.SourceSans
+up.Text = "UP"
+up.TextColor3 = Color3.fromRGB(0, 0, 0)
+up.TextSize = 14.000
 
--- Шапка
-local TopBar = Instance.new("Frame")
-TopBar.Size = UDim2.new(1, 0, 0, 40)
-TopBar.BackgroundColor3 = Color3.fromRGB(50, 200, 120)
-TopBar.BorderSizePixel = 0
-TopBar.Parent = MainFrame
+down.Name = "down"
+down.Parent = Frame
+down.BackgroundColor3 = Color3.fromRGB(215, 255, 121)
+down.Position = UDim2.new(0, 0, 0.329411775, 0)
+down.Size = UDim2.new(0, 44, 0, 28)
+down.Font = Enum.Font.SourceSans
+down.Text = "DOWN"
+down.TextColor3 = Color3.fromRGB(0, 0, 0)
+down.TextSize = 14.000
 
-local TopCorner = Instance.new("UICorner")
-TopCorner.CornerRadius = UDim.new(0, 10)
-TopCorner.Parent = TopBar
+onof.Name = "onof"
+onof.Parent = Frame
+onof.BackgroundColor3 = Color3.fromRGB(255, 249, 74)
+onof.Position = UDim2.new(0.702823281, 0, 0.329411775, 0)
+onof.Size = UDim2.new(0, 56, 0, 28)
+onof.Font = Enum.Font.SourceSans
+onof.Text = "fly"
+onof.TextColor3 = Color3.fromRGB(0, 0, 0)
+onof.TextSize = 14.000
 
-local Title = Instance.new("TextLabel")
-Title.Size = UDim2.new(0.7, 0, 1, 0)
-Title.Position = UDim2.new(0.05, 0, 0, 0)
-Title.Text = "MURDER DUELS"
-Title.TextColor3 = Color3.fromRGB(255, 255, 255)
-Title.TextSize = 14
-Title.TextXAlignment = Enum.TextXAlignment.Left
-Title.BackgroundTransparency = 1
-Title.Font = Enum.Font.GothamBold
-Title.Parent = TopBar
+TextLabel.Parent = Frame
+TextLabel.BackgroundColor3 = Color3.fromRGB(242, 60, 255)
+TextLabel.Position = UDim2.new(0.469327301, 0, 0, 0)
+TextLabel.Size = UDim2.new(0, 100, 0, 28)
+TextLabel.Font = Enum.Font.SourceSans
+TextLabel.Text = "FLY GUI V4"
+TextLabel.TextColor3 = Color3.fromRGB(0, 0, 0)
+TextLabel.TextScaled = true
+TextLabel.TextSize = 14.000
+TextLabel.TextWrapped = true
 
-local CloseBtn = Instance.new("TextButton")
-CloseBtn.Size = UDim2.new(0, 25, 0, 25)
-CloseBtn.Position = UDim2.new(1, -30, 0, 7)
-CloseBtn.Text = "✕"
-CloseBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
-CloseBtn.TextSize = 14
-CloseBtn.BackgroundColor3 = Color3.fromRGB(200, 50, 80)
-CloseBtn.BorderSizePixel = 0
-CloseBtn.Font = Enum.Font.Gotham
-CloseBtn.Parent = TopBar
-local CloseCorner = Instance.new("UICorner")
-CloseCorner.CornerRadius = UDim.new(0, 5)
-CloseCorner.Parent = CloseBtn
+plus.Name = "plus"
+plus.Parent = Frame
+plus.BackgroundColor3 = Color3.fromRGB(133, 145, 255)
+plus.Position = UDim2.new(0.231578946, 0, 0, 0)
+plus.Size = UDim2.new(0, 45, 0, 27)
+plus.Font = Enum.Font.SourceSans
+plus.Text = "+"
+plus.TextColor3 = Color3.fromRGB(0, 0, 0)
+plus.TextScaled = true
+plus.TextSize = 14.000
+plus.TextWrapped = true
 
--- Вкладки
-local TabBar = Instance.new("Frame")
-TabBar.Size = UDim2.new(1, 0, 0, 35)
-TabBar.Position = UDim2.new(0, 0, 0, 40)
-TabBar.BackgroundColor3 = Color3.fromRGB(20, 22, 35)
-TabBar.BorderSizePixel = 0
-TabBar.Parent = MainFrame
+speed.Name = "speed"
+speed.Parent = Frame
+speed.BackgroundColor3 = Color3.fromRGB(255, 85, 0)
+speed.Position = UDim2.new(0.468421042, 0, 0.329411775, 0)
+speed.Size = UDim2.new(0, 44, 0, 28)
+speed.Font = Enum.Font.SourceSans
+speed.Text = "50"
+speed.TextColor3 = Color3.fromRGB(0, 0, 0)
+speed.TextScaled = true
+speed.TextSize = 14.000
+speed.TextWrapped = true
 
-local HitboxTab = Instance.new("TextButton")
-HitboxTab.Size = UDim2.new(0.5, 0, 1, 0)
-HitboxTab.Text = "📦 ХИТБОКСЫ"
-HitboxTab.TextColor3 = Color3.fromRGB(255, 255, 255)
-HitboxTab.TextSize = 13
-HitboxTab.BackgroundColor3 = Color3.fromRGB(50, 200, 120)
-HitboxTab.BorderSizePixel = 0
-HitboxTab.Font = Enum.Font.GothamSemibold
-HitboxTab.Parent = TabBar
+mine.Name = "mine"
+mine.Parent = Frame
+mine.BackgroundColor3 = Color3.fromRGB(123, 255, 247)
+mine.Position = UDim2.new(0.231578946, 0, 0.329411775, 0)
+mine.Size = UDim2.new(0, 45, 0, 28)
+mine.Font = Enum.Font.SourceSans
+mine.Text = "-"
+mine.TextColor3 = Color3.fromRGB(0, 0, 0)
+mine.TextScaled = true
+mine.TextSize = 14.000
+mine.TextWrapped = true
 
-local ViewTab = Instance.new("TextButton")
-ViewTab.Size = UDim2.new(0.5, 0, 1, 0)
-ViewTab.Position = UDim2.new(0.5, 0, 0, 0)
-ViewTab.Text = "👁 ВИД"
-ViewTab.TextColor3 = Color3.fromRGB(180, 180, 210)
-ViewTab.TextSize = 13
-ViewTab.BackgroundColor3 = Color3.fromRGB(20, 22, 35)
-ViewTab.BorderSizePixel = 0
-ViewTab.Font = Enum.Font.GothamSemibold
-ViewTab.Parent = TabBar
+keybindButton.Name = "keybindButton"
+keybindButton.Parent = Frame
+keybindButton.BackgroundColor3 = Color3.fromRGB(255, 180, 50)
+keybindButton.Position = UDim2.new(0.231578946, 0, 0.658823550, 0)
+keybindButton.Size = UDim2.new(0, 88, 0, 28)
+keybindButton.Font = Enum.Font.SourceSans
+keybindButton.Text = "Set Keybind"
+keybindButton.TextColor3 = Color3.fromRGB(0, 0, 0)
+keybindButton.TextScaled = true
+keybindButton.TextSize = 14.000
+keybindButton.TextWrapped = true
 
--- Контент
-local Content = Instance.new("Frame")
-Content.Size = UDim2.new(1, 0, 1, -75)
-Content.Position = UDim2.new(0, 0, 0, 75)
-Content.BackgroundTransparency = 1
-Content.Parent = MainFrame
+keybindLabel.Name = "keybindLabel"
+keybindLabel.Parent = Frame
+keybindLabel.BackgroundColor3 = Color3.fromRGB(200, 200, 200)
+keybindLabel.Position = UDim2.new(0, 0, 0.658823550, 0)
+keybindLabel.Size = UDim2.new(0, 44, 0, 28)
+keybindLabel.Font = Enum.Font.SourceSans
+keybindLabel.Text = "F"
+keybindLabel.TextColor3 = Color3.fromRGB(0, 0, 0)
+keybindLabel.TextScaled = true
+keybindLabel.TextSize = 14.000
+keybindLabel.TextWrapped = true
 
--- ===== ВКЛАДКА "ХИТБОКСЫ" =====
-local HitboxPanel = Instance.new("Frame")
-HitboxPanel.Size = UDim2.new(1, 0, 1, 0)
-HitboxPanel.BackgroundTransparency = 1
-HitboxPanel.Parent = Content
+resetKeybindButton.Name = "resetKeybindButton"
+resetKeybindButton.Parent = Frame
+resetKeybindButton.BackgroundColor3 = Color3.fromRGB(255, 100, 100)
+resetKeybindButton.Position = UDim2.new(0.706, 0, 0.647058824, 0)
+resetKeybindButton.Size = UDim2.new(0, 55.1, 0, 29)
+resetKeybindButton.Font = Enum.Font.SourceSans
+resetKeybindButton.Text = "Reset"
+resetKeybindButton.TextColor3 = Color3.fromRGB(0, 0, 0)
+resetKeybindButton.TextScaled = true
+resetKeybindButton.TextSize = 14.000
+resetKeybindButton.TextWrapped = true
 
-local HitboxInfo = Instance.new("TextLabel")
-HitboxInfo.Size = UDim2.new(0.9, 0, 0, 40)
-HitboxInfo.Position = UDim2.new(0.05, 0, 0.05, 0)
-HitboxInfo.Text = "Увеличивает все части тела врагов\nдо 100 раз (легче попасть)"
-HitboxInfo.TextColor3 = Color3.fromRGB(180, 180, 210)
-HitboxInfo.TextSize = 12
-HitboxInfo.TextXAlignment = Enum.TextXAlignment.Center
-HitboxInfo.BackgroundTransparency = 1
-HitboxInfo.Font = Enum.Font.Gotham
-HitboxInfo.Parent = HitboxPanel
+closebutton.Name = "Close"
+closebutton.Parent = main.Frame
+closebutton.BackgroundColor3 = Color3.fromRGB(225, 25, 0)
+closebutton.Font = "SourceSans"
+closebutton.Size = UDim2.new(0, 45, 0, 28)
+closebutton.Text = "X"
+closebutton.TextSize = 30
+closebutton.Position = UDim2.new(0, 0, -1, 55)
 
-local HitboxBtn = Instance.new("TextButton")
-HitboxBtn.Size = UDim2.new(0.9, 0, 0, 50)
-HitboxBtn.Position = UDim2.new(0.05, 0, 0.25, 0)
-HitboxBtn.Text = "🎯 ВКЛЮЧИТЬ ХИТБОКСЫ"
-HitboxBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
-HitboxBtn.TextSize = 15
-HitboxBtn.BackgroundColor3 = Color3.fromRGB(255, 140, 0)
-HitboxBtn.BorderSizePixel = 0
-HitboxBtn.Font = Enum.Font.GothamBold
-HitboxBtn.Parent = HitboxPanel
-local HitboxCorner = Instance.new("UICorner")
-HitboxCorner.CornerRadius = UDim.new(0, 8)
-HitboxCorner.Parent = HitboxBtn
+mini.Name = "minimize"
+mini.Parent = main.Frame
+mini.BackgroundColor3 = Color3.fromRGB(192, 150, 230)
+mini.Font = "SourceSans"
+mini.Size = UDim2.new(0, 45, 0, 28)
+mini.Text = "-"
+mini.TextSize = 40
+mini.Position = UDim2.new(0, 44, -1, 55)
 
--- 🔥 ПОДСКАЗКА ПРО ГОРЯЧУЮ КЛАВИШУ
-local HotkeyHint = Instance.new("TextLabel")
-HotkeyHint.Size = UDim2.new(0.9, 0, 0, 18)
-HotkeyHint.Position = UDim2.new(0.05, 0, 0.42, 0)
-HotkeyHint.Text = "⌨️ H — быстрый вкл/выкл"
-HotkeyHint.TextColor3 = Color3.fromRGB(255, 200, 100)
-HotkeyHint.TextSize = 11
-HotkeyHint.TextXAlignment = Enum.TextXAlignment.Center
-HotkeyHint.BackgroundTransparency = 1
-HotkeyHint.Font = Enum.Font.Gotham
-HotkeyHint.Parent = HitboxPanel
+mini2.Name = "minimize2"
+mini2.Parent = main.Frame
+mini2.BackgroundColor3 = Color3.fromRGB(192, 150, 230)
+mini2.Font = "SourceSans"
+mini2.Size = UDim2.new(0, 45, 0, 28)
+mini2.Text = "+"
+mini2.TextSize = 40
+mini2.Position = UDim2.new(0, 44, -1, 85)
+mini2.Visible = false
 
-local HitboxStatus = Instance.new("TextLabel")
-HitboxStatus.Size = UDim2.new(0.9, 0, 0, 22)
-HitboxStatus.Position = UDim2.new(0.05, 0, 0.5, 0)
-HitboxStatus.Text = "● ВЫКЛЮЧЕНО"
-HitboxStatus.TextColor3 = Color3.fromRGB(200, 80, 80)
-HitboxStatus.TextSize = 13
-HitboxStatus.TextXAlignment = Enum.TextXAlignment.Center
-HitboxStatus.BackgroundTransparency = 1
-HitboxStatus.Font = Enum.Font.Gotham
-HitboxStatus.Parent = HitboxPanel
+Frame.Active = true
+Frame.Draggable = true
 
-local ScaleLabel = Instance.new("TextLabel")
-ScaleLabel.Size = UDim2.new(0.9, 0, 0, 20)
-ScaleLabel.Position = UDim2.new(0.05, 0, 0.62, 0)
-ScaleLabel.Text = "РАЗМЕР ХИТБОКСА (1-100)"
-ScaleLabel.TextColor3 = Color3.fromRGB(180, 180, 210)
-ScaleLabel.TextSize = 11
-ScaleLabel.TextXAlignment = Enum.TextXAlignment.Left
-ScaleLabel.BackgroundTransparency = 1
-ScaleLabel.Font = Enum.Font.Gotham
-ScaleLabel.Parent = HitboxPanel
-
-local ScaleInput = Instance.new("TextBox")
-ScaleInput.Size = UDim2.new(0.9, 0, 0, 35)
-ScaleInput.Position = UDim2.new(0.05, 0, 0.7, 0)
-ScaleInput.Text = "3"
-ScaleInput.TextColor3 = Color3.fromRGB(255, 255, 255)
-ScaleInput.TextSize = 15
-ScaleInput.BackgroundColor3 = Color3.fromRGB(30, 33, 50)
-ScaleInput.BorderSizePixel = 0
-ScaleInput.TextXAlignment = Enum.TextXAlignment.Center
-ScaleInput.Font = Enum.Font.GothamBold
-ScaleInput.Parent = HitboxPanel
-local ScaleCorner = Instance.new("UICorner")
-ScaleCorner.CornerRadius = UDim.new(0, 6)
-ScaleCorner.Parent = ScaleInput
-
-local QuickFrame = Instance.new("Frame")
-QuickFrame.Size = UDim2.new(0.9, 0, 0, 30)
-QuickFrame.Position = UDim2.new(0.05, 0, 0.88, 0)
-QuickFrame.BackgroundTransparency = 1
-QuickFrame.Parent = HitboxPanel
-
-local quickValues = {3, 10, 30, 50, 100}
-for i, val in ipairs(quickValues) do
-    local qBtn = Instance.new("TextButton")
-    qBtn.Size = UDim2.new(0.18, 0, 1, 0)
-    qBtn.Position = UDim2.new((i-1) * 0.2, 0, 0, 0)
-    qBtn.Text = tostring(val)
-    qBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
-    qBtn.TextSize = 11
-    qBtn.BackgroundColor3 = Color3.fromRGB(60, 60, 100)
-    qBtn.BorderSizePixel = 0
-    qBtn.Font = Enum.Font.GothamBold
-    qBtn.Parent = QuickFrame
-    local qCorner = Instance.new("UICorner")
-    qCorner.CornerRadius = UDim.new(0, 5)
-    qCorner.Parent = qBtn
-    
-    qBtn.MouseButton1Click:Connect(function()
-        HitboxScale = val
-        ScaleInput.Text = tostring(val)
-        if HitboxActive then
-            DisableHitbox()
-            EnableHitbox()
-        end
+local function createClickEffect(button)
+    local originalColor = button.BackgroundColor3
+    local originalSize = button.Size
+    button.MouseButton1Click:Connect(function()
+        local tweenInfo = TweenInfo.new(0.1, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
+        local scaledSize = UDim2.new(
+            originalSize.X.Scale * 0.9,
+            originalSize.X.Offset * 0.9,
+            originalSize.Y.Scale * 0.9,
+            originalSize.Y.Offset * 0.9
+        )
+        local scaleDown = TweenService:Create(button, tweenInfo, {Size = scaledSize})
+        local darkerColor = Color3.fromRGB(
+            math.floor(originalColor.R * 255 * 0.8),
+            math.floor(originalColor.G * 255 * 0.8),
+            math.floor(originalColor.B * 255 * 0.8)
+        )
+        local colorTween = TweenService:Create(button, tweenInfo, {BackgroundColor3 = darkerColor})
+        scaleDown:Play()
+        colorTween:Play()
+        scaleDown.Completed:Connect(function()
+            local scaleUp = TweenService:Create(button, tweenInfo, {Size = originalSize})
+            local colorRestore = TweenService:Create(button, tweenInfo, {BackgroundColor3 = originalColor})
+            scaleUp:Play()
+            colorRestore:Play()
+        end)
     end)
 end
 
-ScaleInput.FocusLost:Connect(function()
-    local val = tonumber(ScaleInput.Text)
-    if val and val >= 1 and val <= 100 then
-        HitboxScale = val
-        if HitboxActive then
-            DisableHitbox()
-            EnableHitbox()
+local buttons = {up, down, onof, plus, mine, keybindButton, resetKeybindButton, closebutton, mini, mini2}
+for _, button in pairs(buttons) do
+    createClickEffect(button)
+end
+
+local function getCharacter()
+    return player.Character or player.CharacterAdded:Wait()
+end
+
+local function getRootPart()
+    local char = getCharacter()
+    return char:FindFirstChild("HumanoidRootPart") or char:FindFirstChild("Torso")
+end
+
+local function waitForControlModule()
+    local success, controlModule = pcall(function()
+        return require(player:WaitForChild("PlayerScripts"):WaitForChild("PlayerModule"):WaitForChild("ControlModule"))
+    end)
+    if success then return controlModule else return nil end
+end
+
+local function isMovementAnimation(animationId)
+    if not animationId then return false end
+    local movementAnimIds = {
+        "rbxassetid://180436334", "rbxassetid://180436148", "rbxassetid://125750702",
+        "rbxassetid://180436148", "rbxassetid://180435571", "rbxassetid://180435792",
+        "rbxassetid://180436334"
+    }
+    for _, id in pairs(movementAnimIds) do
+        if animationId:find(id:gsub("rbxassetid://", "")) then
+            return true
         end
-    else
-        ScaleInput.Text = tostring(HitboxScale)
     end
-end)
+    return false
+end
 
--- ===== ВКЛАДКА "ВИД" =====
-local ViewPanel = Instance.new("Frame")
-ViewPanel.Size = UDim2.new(1, 0, 1, 0)
-ViewPanel.BackgroundTransparency = 1
-ViewPanel.Visible = false
-ViewPanel.Parent = Content
+local function isCharacterAnchored()
+    local char = getCharacter()
+    local root = getRootPart()
+    if not char or not root then return false end
+    if root.Anchored then return true end
+    local humanoid = char:FindFirstChildOfClass("Humanoid")
+    if humanoid and humanoid.Sit then return true end
+    for _, part in pairs(char:GetChildren()) do
+        if part:IsA("BasePart") and part.Anchored then
+            return true
+        end
+    end
+    local joints = root:GetJoints()
+    for _, joint in pairs(joints) do
+        if joint:IsA("Motor6D") or joint:IsA("Weld") or joint:IsA("WeldConstraint") then
+            local otherPart = joint.Part0 == root and joint.Part1 or joint.Part0
+            if otherPart and otherPart.Anchored and otherPart.Parent ~= char then
+                return true
+            end
+        end
+    end
+    return false
+end
 
-local EspInfo = Instance.new("TextLabel")
-EspInfo.Size = UDim2.new(0.9, 0, 0, 40)
-EspInfo.Position = UDim2.new(0.05, 0, 0.05, 0)
-EspInfo.Text = "ESP — красная обводка вокруг\nвсех врагов на сервере"
-EspInfo.TextColor3 = Color3.fromRGB(180, 180, 210)
-EspInfo.TextSize = 12
-EspInfo.TextXAlignment = Enum.TextXAlignment.Center
-EspInfo.BackgroundTransparency = 1
-EspInfo.Font = Enum.Font.Gotham
-EspInfo.Parent = ViewPanel
-
-local EspBtn = Instance.new("TextButton")
-EspBtn.Size = UDim2.new(0.9, 0, 0, 50)
-EspBtn.Position = UDim2.new(0.05, 0, 0.25, 0)
-EspBtn.Text = "👁 ВКЛЮЧИТЬ ESP"
-EspBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
-EspBtn.TextSize = 15
-EspBtn.BackgroundColor3 = Color3.fromRGB(255, 60, 60)
-EspBtn.BorderSizePixel = 0
-EspBtn.Font = Enum.Font.GothamBold
-EspBtn.Parent = ViewPanel
-local EspCorner = Instance.new("UICorner")
-EspCorner.CornerRadius = UDim.new(0, 8)
-EspCorner.Parent = EspBtn
-
-local EspStatus = Instance.new("TextLabel")
-EspStatus.Size = UDim2.new(0.9, 0, 0, 22)
-EspStatus.Position = UDim2.new(0.05, 0, 0.5, 0)
-EspStatus.Text = "● ВЫКЛЮЧЕНО"
-EspStatus.TextColor3 = Color3.fromRGB(200, 80, 80)
-EspStatus.TextSize = 13
-EspStatus.TextXAlignment = Enum.TextXAlignment.Center
-EspStatus.BackgroundTransparency = 1
-EspStatus.Font = Enum.Font.Gotham
-EspStatus.Parent = ViewPanel
-
-local EspColorLabel = Instance.new("TextLabel")
-EspColorLabel.Size = UDim2.new(0.9, 0, 0, 20)
-EspColorLabel.Position = UDim2.new(0.05, 0, 0.62, 0)
-EspColorLabel.Text = "ЦВЕТ ОБВОДКИ"
-EspColorLabel.TextColor3 = Color3.fromRGB(180, 180, 210)
-EspColorLabel.TextSize = 11
-EspColorLabel.TextXAlignment = Enum.TextXAlignment.Left
-EspColorLabel.BackgroundTransparency = 1
-EspColorLabel.Font = Enum.Font.Gotham
-EspColorLabel.Parent = ViewPanel
-
-local ColorsFrame = Instance.new("Frame")
-ColorsFrame.Size = UDim2.new(0.9, 0, 0, 40)
-ColorsFrame.Position = UDim2.new(0.05, 0, 0.7, 0)
-ColorsFrame.BackgroundTransparency = 1
-ColorsFrame.Parent = ViewPanel
-
-local colors = {
-    {color = Color3.fromRGB(255, 0, 0)},
-    {color = Color3.fromRGB(0, 255, 0)},
-    {color = Color3.fromRGB(0, 150, 255)},
-    {color = Color3.fromRGB(180, 0, 255)}
-}
-
-for i, c in ipairs(colors) do
-    local colorBtn = Instance.new("TextButton")
-    colorBtn.Size = UDim2.new(0.22, 0, 1, 0)
-    colorBtn.Position = UDim2.new((i-1) * 0.26, 0, 0, 0)
-    colorBtn.Text = ""
-    colorBtn.BackgroundColor3 = c.color
-    colorBtn.BorderSizePixel = 0
-    colorBtn.Parent = ColorsFrame
-    local colorCorner = Instance.new("UICorner")
-    colorCorner.CornerRadius = UDim.new(0, 6)
-    colorCorner.Parent = colorBtn
-    
-    colorBtn.MouseButton1Click:Connect(function()
-        EspColor = c.color
-        for _, highlight in pairs(EspHighlights) do
-            if highlight and highlight.Parent then
-                highlight.FillColor = EspColor
-                highlight.OutlineColor = EspColor
+local function handleAnimations()
+    local char = getCharacter()
+    local humanoid = char and char:FindFirstChildOfClass("Humanoid")
+    if not humanoid then return end
+    if animationConnection then animationConnection:Disconnect() end
+    animationConnection = humanoid.AnimationPlayed:Connect(function(track)
+        if flyEnabled and flying then
+            if track.Animation and track.Animation.AnimationId then
+                local animId = track.Animation.AnimationId
+                if isMovementAnimation(animId) then
+                    track:Stop()
+                end
             end
         end
     end)
 end
 
--- ===== ФУНКЦИИ =====
-local function GetHitboxParts(char)
-    local parts = {}
-    for _, part in ipairs(char:GetChildren()) do
-        if part:IsA("BasePart") then
-            table.insert(parts, part)
-        end
-    end
-    return parts
-end
-
--- ===== ХИТБОКСЫ =====
-local function ApplyHitboxToPlayer(otherPlayer)
-    if otherPlayer == Player then return end
-    local char = otherPlayer.Character
-    if not char then return end
-    if char == Player.Character then return end
-    
-    local parts = GetHitboxParts(char)
-    for _, part in ipairs(parts) do
-        if not OriginalSizes[part] then
-            OriginalSizes[part] = {Size = part.Size}
-            part.Size = part.Size * HitboxScale
-        end
-    end
-end
-
-function EnableHitbox()
-    HitboxActive = true
-    OriginalSizes = {}
-    
-    for _, otherPlayer in ipairs(game.Players:GetPlayers()) do
-        ApplyHitboxToPlayer(otherPlayer)
-    end
-    
-    HitboxBtn.Text = "🎯 ВЫКЛЮЧИТЬ ХИТБОКСЫ"
-    HitboxBtn.BackgroundColor3 = Color3.fromRGB(50, 200, 120)
-    HitboxStatus.Text = "● ВКЛЮЧЕНО (x" .. HitboxScale .. ")"
-    HitboxStatus.TextColor3 = Color3.fromRGB(100, 200, 100)
-end
-
-function DisableHitbox()
-    HitboxActive = false
-    
-    for part, data in pairs(OriginalSizes) do
-        if part and part.Parent then
-            part.Size = data.Size
-        end
-    end
-    OriginalSizes = {}
-    
-    HitboxBtn.Text = "🎯 ВКЛЮЧИТЬ ХИТБОКСЫ"
-    HitboxBtn.BackgroundColor3 = Color3.fromRGB(255, 140, 0)
-    HitboxStatus.Text = "● ВЫКЛЮЧЕНО"
-    HitboxStatus.TextColor3 = Color3.fromRGB(200, 80, 80)
-end
-
--- ===== ESP =====
-local function CreateHighlight(char)
-    if not char then return nil end
-    local old = char:FindFirstChild("MurderESP")
-    if old then old:Destroy() end
-    
-    local highlight = Instance.new("Highlight")
-    highlight.Name = "MurderESP"
-    highlight.FillColor = EspColor
-    highlight.FillTransparency = 0.7
-    highlight.OutlineColor = EspColor
-    highlight.OutlineTransparency = 0
-    highlight.DepthMode = Enum.HighlightDepthMode.AlwaysOnTop
-    highlight.Parent = char
-    
-    return highlight
-end
-
-local function ApplyEspToPlayer(otherPlayer)
-    if otherPlayer == Player then return end
-    local char = otherPlayer.Character
-    if not char then return end
-    if char == Player.Character then return end
-    
-    local humanoid = char:FindFirstChild("Humanoid")
-    if not humanoid or humanoid.Health <= 0 then return end
-    
-    local existing = char:FindFirstChild("MurderESP")
-    if not existing then
-        local highlight = CreateHighlight(char)
-        if highlight then
-            EspHighlights[otherPlayer] = highlight
-        end
-    end
-end
-
-function EnableEsp()
-    EspActive = true
-    EspHighlights = {}
-    
-    for _, otherPlayer in ipairs(game.Players:GetPlayers()) do
-        ApplyEspToPlayer(otherPlayer)
-    end
-    
-    EspBtn.Text = "👁 ВЫКЛЮЧИТЬ ESP"
-    EspBtn.BackgroundColor3 = Color3.fromRGB(50, 200, 120)
-    EspStatus.Text = "● ВКЛЮЧЕНО"
-    EspStatus.TextColor3 = Color3.fromRGB(100, 200, 100)
-end
-
-function DisableEsp()
-    EspActive = false
-    
-    for _, highlight in pairs(EspHighlights) do
-        if highlight and highlight.Parent then
-            highlight:Destroy()
-        end
-    end
-    EspHighlights = {}
-    
-    for _, p in ipairs(game.Players:GetPlayers()) do
-        if p.Character then
-            local h = p.Character:FindFirstChild("MurderESP")
-            if h then h:Destroy() end
-        end
-    end
-    
-    EspBtn.Text = "👁 ВКЛЮЧИТЬ ESP"
-    EspBtn.BackgroundColor3 = Color3.fromRGB(255, 60, 60)
-    EspStatus.Text = "● ВЫКЛЮЧЕНО"
-    EspStatus.TextColor3 = Color3.fromRGB(200, 80, 80)
-end
-
--- ===== 🔥 ГОРЯЧАЯ КЛАВИША H =====
-UserInputService.InputBegan:Connect(function(input, gameProcessed)
-    if gameProcessed then return end
-    if input.KeyCode == HitboxHotkey then
-        if HitboxActive then
-            DisableHitbox()
-        else
-            EnableHitbox()
-        end
-    end
-end)
-
--- ===== ГЛАВНЫЙ ЦИКЛ =====
-task.spawn(function()
-    while ScreenGui.Parent do
-        task.wait(CheckInterval)
-        
-        if EspActive then
-            for _, otherPlayer in ipairs(game.Players:GetPlayers()) do
-                ApplyEspToPlayer(otherPlayer)
+local function preventSitting()
+    local char = getCharacter()
+    local humanoid = char and char:FindFirstChildOfClass("Humanoid")
+    if humanoid and flyEnabled then
+        if stateChangedConnection then stateChangedConnection:Disconnect() end
+        stateChangedConnection = humanoid.StateChanged:Connect(function(old, new)
+            if flyEnabled then
+                if new == Enum.HumanoidStateType.Seated then
+                    task.spawn(function()
+                        task.wait(0.1)
+                        if flyEnabled and humanoid.Parent then
+                            humanoid:ChangeState(Enum.HumanoidStateType.Running)
+                        end
+                    end)
+                elseif old == Enum.HumanoidStateType.Seated and (new == Enum.HumanoidStateType.Jumping or new == Enum.HumanoidStateType.Running or new == Enum.HumanoidStateType.Freefall) then
+                    task.spawn(function()
+                        task.wait(0.2)
+                        if flyEnabled and humanoid.Parent then
+                            humanoid.PlatformStand = true
+                            if not flying then
+                                startFly()
+                            end
+                        end
+                    end)
+                end
             end
-        end
-        
-        if HitboxActive then
-            for _, otherPlayer in ipairs(game.Players:GetPlayers()) do
-                ApplyHitboxToPlayer(otherPlayer)
-            end
-        end
-    end
-end)
-
--- ===== ОТСЛЕЖИВАНИЕ НОВЫХ ПЕРСОНАЖЕЙ =====
-local function OnCharacterAdded(otherPlayer)
-    task.wait(1)
-    if EspActive then ApplyEspToPlayer(otherPlayer) end
-    if HitboxActive then ApplyHitboxToPlayer(otherPlayer) end
-end
-
-for _, p in ipairs(game.Players:GetPlayers()) do
-    if p ~= Player then
-        p.CharacterAdded:Connect(function()
-            OnCharacterAdded(p)
         end)
     end
 end
 
-game.Players.PlayerAdded:Connect(function(p)
-    p.CharacterAdded:Connect(function()
-        OnCharacterAdded(p)
+local function storeOriginalCollisions()
+    originalCollisionStates = {}
+    local char = player.Character
+    if char then
+        for _, v in pairs(char:GetDescendants()) do
+            if v:IsA("BasePart") then
+                originalCollisionStates[v] = v.CanCollide
+            end
+        end
+    end
+end
+
+local function enableNoclip()
+    if noclipConnection then noclipConnection:Disconnect() noclipConnection = nil end
+    if not getgenv().noclipfly then return end
+    storeOriginalCollisions()
+    
+    noclipConnection = RunService.Stepped:Connect(function()
+        if not flyEnabled or not flying then return end
+        local char = player.Character
+        if char then
+            for _, v in pairs(char:GetDescendants()) do
+                if v:IsA("BasePart") and v.CanCollide then
+                    v.CanCollide = false
+                end
+            end
+        end
     end)
-end)
+end
 
--- ===== ПЕРЕКЛЮЧЕНИЕ ВКЛАДОК =====
-HitboxTab.MouseButton1Click:Connect(function()
-    HitboxPanel.Visible = true
-    ViewPanel.Visible = false
-    HitboxTab.BackgroundColor3 = Color3.fromRGB(50, 200, 120)
-    HitboxTab.TextColor3 = Color3.fromRGB(255, 255, 255)
-    ViewTab.BackgroundColor3 = Color3.fromRGB(20, 22, 35)
-    ViewTab.TextColor3 = Color3.fromRGB(180, 180, 210)
-end)
+local function disableNoclip()
+    if noclipConnection then noclipConnection:Disconnect() noclipConnection = nil end
+    local char = player.Character
+    if char then
+        for _, v in pairs(char:GetDescendants()) do
+            if v:IsA("BasePart") then
+                if originalCollisionStates[v] ~= nil then
+                    v.CanCollide = originalCollisionStates[v]
+                else
+                    if v.Name == "Head" or v.Name == "HumanoidRootPart" or 
+                       v.Name == "Torso" or v.Name == "UpperTorso" or 
+                       v.Name == "LowerTorso" then
+                        v.CanCollide = false
+                    else
+                        v.CanCollide = true
+                    end
+                end
+            end
+        end
+    end
+    task.wait(0.1)
+    if char then
+        local humanoid = char:FindFirstChildOfClass("Humanoid")
+        local root = char:FindFirstChild("HumanoidRootPart") or char:FindFirstChild("Torso")
+        if humanoid and root then
+            humanoid:ChangeState(Enum.HumanoidStateType.Physics)
+            task.wait(0.05)
+            humanoid:ChangeState(Enum.HumanoidStateType.Running)
+        end
+    end
+    originalCollisionStates = {}
+end
 
-ViewTab.MouseButton1Click:Connect(function()
-    HitboxPanel.Visible = false
-    ViewPanel.Visible = true
-    ViewTab.BackgroundColor3 = Color3.fromRGB(50, 200, 120)
-    ViewTab.TextColor3 = Color3.fromRGB(255, 255, 255)
-    HitboxTab.BackgroundColor3 = Color3.fromRGB(20, 22, 35)
-    HitboxTab.TextColor3 = Color3.fromRGB(180, 180, 210)
-end)
+function startFlyV4()
+    local char = getCharacter()
+    local root = getRootPart()
+    if not char or not root or not flyEnabled then return end
+    flying = true
+    if bodyVelocity then bodyVelocity:Destroy() end
+    if bodyGyro then bodyGyro:Destroy() end
+    bodyVelocity = Instance.new("BodyVelocity")
+    bodyVelocity.Velocity = Vector3.zero
+    bodyVelocity.MaxForce = Vector3.new(9e9, 9e9, 9e9)
+    bodyVelocity.Parent = root
+    bodyGyro = Instance.new("BodyGyro")
+    bodyGyro.MaxTorque = Vector3.new(9e9, 9e9, 9e9)
+    bodyGyro.P = 1e4
+    bodyGyro.CFrame = root.CFrame
+    bodyGyro.Parent = root
 
--- ===== КНОПКИ =====
-HitboxBtn.MouseButton1Click:Connect(function()
-    if HitboxActive then DisableHitbox() else EnableHitbox() end
-end)
+    local humanoid = char:FindFirstChildOfClass("Humanoid")
+    if humanoid then
+        for _, track in pairs(humanoid:GetPlayingAnimationTracks()) do
+            if track.Animation and track.Animation.AnimationId then
+                if isMovementAnimation(track.Animation.AnimationId) then
+                    track:Stop()
+                end
+            end
+        end
+        task.wait(0.1)
+        humanoid.PlatformStand = true
+        preventSitting()
+        handleAnimations()
+    end
+    local controlModule = waitForControlModule()
+    local camera = workspace.CurrentCamera
+    lastLookDirection = camera.CFrame.LookVector
+    if flyConnection then flyConnection:Disconnect() end
+    flyConnection = RunService.Heartbeat:Connect(function()
+        if not flyEnabled or not flying or not root or not root.Parent then 
+            return 
+        end
+        local humanoid = char:FindFirstChildOfClass("Humanoid")
+        if humanoid and not humanoid.PlatformStand then
+            humanoid.PlatformStand = true
+        end
+        local moveVec = Vector3.zero
+        if controlModule then moveVec = controlModule:GetMoveVector() end
+        local targetVelocity = Vector3.zero
+        if moveVec.Magnitude > 0 then
+            local cameraCFrame = camera.CFrame
+            local direction = cameraCFrame:VectorToWorldSpace(moveVec)
+            targetVelocity = direction.Unit * flySpeed
+        end
+        if bodyVelocity then
+            bodyVelocity.Velocity = bodyVelocity.Velocity:Lerp(targetVelocity, 0.25)
+        end
+        if flyEnabled and flying and bodyGyro and not isCharacterAnchored() then
+            local currentLookDirection = camera.CFrame.LookVector
+            local smoothedLookDirection = lastLookDirection:Lerp(currentLookDirection, rotationSpeed)
+            lastLookDirection = smoothedLookDirection
+            local targetCFrame = CFrame.lookAt(root.Position, root.Position + smoothedLookDirection)
+            bodyGyro.CFrame = targetCFrame
+        end
+        if targetVelocity.Magnitude == 0 then
+            if bodyVelocity then
+                bodyVelocity.Velocity = Vector3.zero
+            end
+            root.AssemblyLinearVelocity = Vector3.zero
+        end
+    end)
+    enableNoclip()
+end
 
-EspBtn.MouseButton1Click:Connect(function()
-    if EspActive then DisableEsp() else EnableEsp() end
-end)
+function startFlyV3()
+    if not flyEnabled then return end
+    flying = true
+    
+    if nowe == true then
+        nowe = false
 
-CloseBtn.MouseButton1Click:Connect(function()
-    if HitboxActive then DisableHitbox() end
-    if EspActive then DisableEsp() end
-    ScreenGui:Destroy()
-end)
+        speaker.Character.Humanoid:SetStateEnabled(Enum.HumanoidStateType.Climbing,true)
+        speaker.Character.Humanoid:SetStateEnabled(Enum.HumanoidStateType.FallingDown,true)
+        speaker.Character.Humanoid:SetStateEnabled(Enum.HumanoidStateType.Flying,true)
+        speaker.Character.Humanoid:SetStateEnabled(Enum.HumanoidStateType.Freefall,true)
+        speaker.Character.Humanoid:SetStateEnabled(Enum.HumanoidStateType.GettingUp,true)
+        speaker.Character.Humanoid:SetStateEnabled(Enum.HumanoidStateType.Jumping,true)
+        speaker.Character.Humanoid:SetStateEnabled(Enum.HumanoidStateType.Landed,true)
+        speaker.Character.Humanoid:SetStateEnabled(Enum.HumanoidStateType.Physics,true)
+        speaker.Character.Humanoid:SetStateEnabled(Enum.HumanoidStateType.PlatformStanding,true)
+        speaker.Character.Humanoid:SetStateEnabled(Enum.HumanoidStateType.Ragdoll,true)
+        speaker.Character.Humanoid:SetStateEnabled(Enum.HumanoidStateType.Running,true)
+        speaker.Character.Humanoid:SetStateEnabled(Enum.HumanoidStateType.RunningNoPhysics,true)
+        speaker.Character.Humanoid:SetStateEnabled(Enum.HumanoidStateType.Seated,true)
+        speaker.Character.Humanoid:SetStateEnabled(Enum.HumanoidStateType.StrafingNoPhysics,true)
+        speaker.Character.Humanoid:SetStateEnabled(Enum.HumanoidStateType.Swimming,true)
+        speaker.Character.Humanoid:ChangeState(Enum.HumanoidStateType.RunningNoPhysics)
+    else 
+        nowe = true
 
-print("✅ Murder Duels загружено! H — вкл/выкл хитбоксы")
+        for i = 1, speeds do
+            spawn(function()
+                local hb = game:GetService("RunService").Heartbeat	
+                tpwalking = true
+                local chr = game.Players.LocalPlayer.Character
+                local hum = chr and chr:FindFirstChildWhichIsA("Humanoid")
+                while tpwalking and hb:Wait() and chr and hum and hum.Parent do
+                    if hum.MoveDirection.Magnitude > 0 then
+                        chr:TranslateBy(hum.MoveDirection)
+                    end
+                end
+            end)
+        end
+        
+        game.Players.LocalPlayer.Character.Animate.Disabled = true
+        local Char = game.Players.LocalPlayer.Character
+        local Hum = Char:FindFirstChildOfClass("Humanoid") or Char:FindFirstChildOfClass("AnimationController")
+
+        for i,v in next, Hum:GetPlayingAnimationTracks() do
+            v:AdjustSpeed(0)
+        end
+        
+        speaker.Character.Humanoid:SetStateEnabled(Enum.HumanoidStateType.Climbing,false)
+        speaker.Character.Humanoid:SetStateEnabled(Enum.HumanoidStateType.FallingDown,false)
+        speaker.Character.Humanoid:SetStateEnabled(Enum.HumanoidStateType.Flying,false)
+        speaker.Character.Humanoid:SetStateEnabled(Enum.HumanoidStateType.Freefall,false)
+        speaker.Character.Humanoid:SetStateEnabled(Enum.HumanoidStateType.GettingUp,false)
+        speaker.Character.Humanoid:SetStateEnabled(Enum.HumanoidStateType.Jumping,false)
+        speaker.Character.Humanoid:SetStateEnabled(Enum.HumanoidStateType.Landed,false)
+        speaker.Character.Humanoid:SetStateEnabled(Enum.HumanoidStateType.Physics,false)
+        speaker.Character.Humanoid:SetStateEnabled(Enum.HumanoidStateType.PlatformStanding,false)
+        speaker.Character.Humanoid:SetStateEnabled(Enum.HumanoidStateType.Ragdoll,false)
+        speaker.Character.Humanoid:SetStateEnabled(Enum.HumanoidStateType.Running,false)
+        speaker.Character.Humanoid:SetStateEnabled(Enum.HumanoidStateType.RunningNoPhysics,false)
+        speaker.Character.Humanoid:SetStateEnabled(Enum.HumanoidStateType.Seated,false)
+        speaker.Character.Humanoid:SetStateEnabled(Enum.HumanoidStateType.StrafingNoPhysics,false)
+        speaker.Character.Humanoid:SetStateEnabled(Enum.HumanoidStateType.Swimming,false)
+        speaker.Character.Humanoid:ChangeState(Enum.HumanoidStateType.Swimming)
+    end
+
+    if game:GetService("Players").LocalPlayer.Character:FindFirstChildOfClass("Humanoid").RigType == Enum.HumanoidRigType.R6 then
+        local plr = game.Players.LocalPlayer
+        local torso = plr.Character.Torso
+        local flying = true
+        local deb = true
+        local ctrl = {f = 0, b = 0, l = 0, r = 0}
+        local lastctrl = {f = 0, b = 0, l = 0, r = 0}
+        local maxspeed = 50
+        local speed_v3 = 0
+
+        local bg = Instance.new("BodyGyro", torso)
+        bg.P = 9e4
+        bg.maxTorque = Vector3.new(9e9, 9e9, 9e9)
+        bg.cframe = torso.CFrame
+        local bv = Instance.new("BodyVelocity", torso)
+        bv.velocity = Vector3.new(0,0.1,0)
+        bv.maxForce = Vector3.new(9e9, 9e9, 9e9)
+        
+        if nowe == true then
+            plr.Character.Humanoid.PlatformStand = true
+        end
+        
+        spawn(function()
+            while nowe == true or game:GetService("Players").LocalPlayer.Character.Humanoid.Health == 0 do
+                wait()
+
+                if ctrl.l + ctrl.r ~= 0 or ctrl.f + ctrl.b ~= 0 then
+                    speed_v3 = speed_v3+.5+(speed_v3/maxspeed)
+                    if speed_v3 > maxspeed then
+                        speed_v3 = maxspeed
+                    end
+                elseif not (ctrl.l + ctrl.r ~= 0 or ctrl.f + ctrl.b ~= 0) and speed_v3 ~= 0 then
+                    speed_v3 = speed_v3-1
+                    if speed_v3 < 0 then
+                        speed_v3 = 0
+                    end
+                end
+                
+                if (ctrl.l + ctrl.r) ~= 0 or (ctrl.f + ctrl.b) ~= 0 then
+                    bv.velocity = ((game.Workspace.CurrentCamera.CoordinateFrame.lookVector * (ctrl.f+ctrl.b)) + ((game.Workspace.CurrentCamera.CoordinateFrame * CFrame.new(ctrl.l+ctrl.r,(ctrl.f+ctrl.b)*.2,0).p) - game.Workspace.CurrentCamera.CoordinateFrame.p))*speed_v3
+                    lastctrl = {f = ctrl.f, b = ctrl.b, l = ctrl.l, r = ctrl.r}
+                elseif (ctrl.l + ctrl.r) == 0 and (ctrl.f + ctrl.b) == 0 and speed_v3 ~= 0 then
+                    bv.velocity = ((game.Workspace.CurrentCamera.CoordinateFrame.lookVector * (lastctrl.f+lastctrl.b)) + ((game.Workspace.CurrentCamera.CoordinateFrame * CFrame.new(lastctrl.l+lastctrl.r,(lastctrl.f+lastctrl.b)*.2,0).p) - game.Workspace.CurrentCamera.CoordinateFrame.p))*speed_v3
+                else
+                    bv.velocity = Vector3.new(0,0,0)
+                end
+                
+                bg.cframe = game.Workspace.CurrentCamera.CoordinateFrame * CFrame.Angles(-math.rad((ctrl.f+ctrl.b)*50*speed_v3/maxspeed),0,0)
+            end
+            
+            ctrl = {f = 0, b = 0, l = 0, r = 0}
+            lastctrl = {f = 0, b = 0, l = 0, r = 0}
+            speed_v3 = 0
+            bg:Destroy()
+            bv:Destroy()
+            plr.Character.Humanoid.PlatformStand = false
+            game.Players.LocalPlayer.Character.Animate.Disabled = false
+            tpwalking = false
+        end)
+
+    else
+        local plr = game.Players.LocalPlayer
+        local UpperTorso = plr.Character.UpperTorso
+        local flying = true
+        local deb = true
+        local ctrl = {f = 0, b = 0, l = 0, r = 0}
+        local lastctrl = {f = 0, b = 0, l = 0, r = 0}
+        local maxspeed = 50
+        local speed_v3 = 0
+
+        local bg = Instance.new("BodyGyro", UpperTorso)
+        bg.P = 9e4
+        bg.maxTorque = Vector3.new(9e9, 9e9, 9e9)
+        bg.cframe = UpperTorso.CFrame
+        local bv = Instance.new("BodyVelocity", UpperTorso)
+        bv.velocity = Vector3.new(0,0.1,0)
+        bv.maxForce = Vector3.new(9e9, 9e9, 9e9)
+        
+        if nowe == true then
+            plr.Character.Humanoid.PlatformStand = true
+        end
+        
+        spawn(function()
+            while nowe == true or game:GetService("Players").LocalPlayer.Character.Humanoid.Health == 0 do
+                wait()
+
+                if ctrl.l + ctrl.r ~= 0 or ctrl.f + ctrl.b ~= 0 then
+                    speed_v3 = speed_v3+.5+(speed_v3/maxspeed)
+                    if speed_v3 > maxspeed then
+                        speed_v3 = maxspeed
+                    end
+                elseif not (ctrl.l + ctrl.r ~= 0 or ctrl.f + ctrl.b ~= 0) and speed_v3 ~= 0 then
+                    speed_v3 = speed_v3-1
+                    if speed_v3 < 0 then
+                        speed_v3 = 0
+                    end
+                end
+                
+                if (ctrl.l + ctrl.r) ~= 0 or (ctrl.f + ctrl.b) ~= 0 then
+                    bv.velocity = ((game.Workspace.CurrentCamera.CoordinateFrame.lookVector * (ctrl.f+ctrl.b)) + ((game.Workspace.CurrentCamera.CoordinateFrame * CFrame.new(ctrl.l+ctrl.r,(ctrl.f+ctrl.b)*.2,0).p) - game.Workspace.CurrentCamera.CoordinateFrame.p))*speed_v3
+                    lastctrl = {f = ctrl.f, b = ctrl.b, l = ctrl.l, r = ctrl.r}
+                elseif (ctrl.l + ctrl.r) == 0 and (ctrl.f + ctrl.b) == 0 and speed_v3 ~= 0 then
+                    bv.velocity = ((game.Workspace.CurrentCamera.CoordinateFrame.lookVector * (lastctrl.f+lastctrl.b)) + ((game.Workspace.CurrentCamera.CoordinateFrame * CFrame.new(lastctrl.l+lastctrl.r,(lastctrl.f+lastctrl.b)*.2,0).p) - game.Workspace.CurrentCamera.CoordinateFrame.p))*speed_v3
+                else
+                    bv.velocity = Vector3.new(0,0,0)
+                end
+
+                bg.cframe = game.Workspace.CurrentCamera.CoordinateFrame * CFrame.Angles(-math.rad((ctrl.f+ctrl.b)*50*speed_v3/maxspeed),0,0)
+            end
+            
+            ctrl = {f = 0, b = 0, l = 0, r = 0}
+            lastctrl = {f = 0, b = 0, l = 0, r = 0}
+            speed_v3 = 0
+            bg:Destroy()
+            bv:Destroy()
+            plr.Character.Humanoid.PlatformStand = false
+            game.Players.LocalPlayer.Character.Animate.Disabled = false
+            tpwalking = false
+        end)
+    end
+    
+    enableNoclip()
+end
+
+function startFly()
+    if getgenv().useV3Method then
+        startFlyV3()
+    else
+        startFlyV4()
+    end
+end
+
+function stopFly()
+    flying = false
+    nowe = false
+    tpwalking = false
+    
+    if flyConnection then flyConnection:Disconnect() flyConnection = nil end
+    if bodyVelocity then bodyVelocity:Destroy() bodyVelocity = nil end
+    if bodyGyro then bodyGyro:Destroy() bodyGyro = nil end
+    if stateChangedConnection then stateChangedConnection:Disconnect() stateChangedConnection = nil end
+    if animationConnection then animationConnection:Disconnect() animationConnection = nil end
+    
+    disableNoclip()
+    
+    local char = getCharacter()
+    local humanoid = char and char:FindFirstChildOfClass("Humanoid")
+    local root = getRootPart()
+    
+    if humanoid and root then
+        root.AssemblyAngularVelocity = Vector3.zero
+        root.AssemblyLinearVelocity = Vector3.zero
+        humanoid.PlatformStand = false
+        
+        humanoid:SetStateEnabled(Enum.HumanoidStateType.Climbing, true)
+        humanoid:SetStateEnabled(Enum.HumanoidStateType.FallingDown, true)
+        humanoid:SetStateEnabled(Enum.HumanoidStateType.Flying, true)
+        humanoid:SetStateEnabled(Enum.HumanoidStateType.Freefall, true)
+        humanoid:SetStateEnabled(Enum.HumanoidStateType.GettingUp, true)
+        humanoid:SetStateEnabled(Enum.HumanoidStateType.Jumping, true)
+        humanoid:SetStateEnabled(Enum.HumanoidStateType.Landed, true)
+        humanoid:SetStateEnabled(Enum.HumanoidStateType.Physics, true)
+        humanoid:SetStateEnabled(Enum.HumanoidStateType.PlatformStanding, true)
+        humanoid:SetStateEnabled(Enum.HumanoidStateType.Ragdoll, true)
+        humanoid:SetStateEnabled(Enum.HumanoidStateType.Running, true)
+        humanoid:SetStateEnabled(Enum.HumanoidStateType.RunningNoPhysics, true)
+        humanoid:SetStateEnabled(Enum.HumanoidStateType.Seated, true)
+        humanoid:SetStateEnabled(Enum.HumanoidStateType.StrafingNoPhysics, true)
+        humanoid:SetStateEnabled(Enum.HumanoidStateType.Swimming, true)
+        
+        task.wait(0.1)
+        humanoid:ChangeState(Enum.HumanoidStateType.Running)
+        
+        char.Animate.Disabled = false
+    end
+end
+
+local function toggleFly()
+    flyEnabled = not flyEnabled
+    if flyEnabled then
+        onof.Text = "off"
+        onof.BackgroundColor3 =
